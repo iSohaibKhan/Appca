@@ -1,0 +1,16 @@
+/* Custom CSS for Appca */
+
+/* Add any custom styles here */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Custom utilities */
+.text-indigo-600 {
+    color: #4f46e5;
+}
+
+.bg-indigo-600 {
+    background-color: #4f46e5;
+}
+
