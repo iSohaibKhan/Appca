@@ -1,0 +1,628 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Negative Keywords - Appca{% endblock %}
+
+{% block content %}
+<div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="mb-6">
+        <!-- Desktop Layout -->
+        <div class="hidden md:flex items-center justify-between">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900">Negative Keywords</h2>
+                <p class="mt-1 text-sm text-gray-500">Exclude unwanted search terms from triggering your ads</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <a href="{% url 'negative_keywords_list' %}?export=csv" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-300 font-medium">
+                    Export CSV
+                </a>
+                <button onclick="openImportModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-300 font-medium">
+                    Import CSV
+                </button>
+                <button onclick="openCreateModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium">
+                    + Add Negative Keyword
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Layout -->
+        <div class="md:hidden">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900 text-left">Negative Keywords</h2>
+                <p class="mt-1 text-sm text-gray-500 text-left">Exclude unwanted search terms from triggering your ads</p>
+            </div>
+            <div class="mt-4 space-y-2">
+                <div class="flex space-x-2">
+                    <a href="{% url 'negative_keywords_list' %}?export=csv" class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-300 font-medium text-center">
+                        Export CSV
+                    </a>
+                    <button onclick="openImportModal()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-300 font-medium">
+                        Import CSV
+                    </button>
+                </div>
+                <button onclick="openCreateModal()" class="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium">
+                    + Add Negative Keyword
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl p-6">
+            <div class="text-sm font-medium text-gray-500">Total Negative Keywords</div>
+            <div class="mt-2 text-2xl font-bold text-gray-900">{{ total_count|intcomma }}</div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl p-6">
+            <div class="text-sm font-medium text-gray-500">Enabled</div>
+            <div class="mt-2 text-2xl font-bold text-green-600">{{ enabled_count|intcomma }}</div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl p-6">
+            <div class="text-sm font-medium text-gray-500">Paused</div>
+            <div class="mt-2 text-2xl font-bold text-yellow-600">{{ paused_count|intcomma }}</div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl p-6">
+            <div class="text-sm font-medium text-gray-500">Campaign Level</div>
+            <div class="mt-2 text-2xl font-bold text-indigo-600">{{ campaign_level_count|intcomma }}</div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl p-6">
+            <div class="text-sm font-medium text-gray-500">Ad Group Level</div>
+            <div class="mt-2 text-2xl font-bold text-purple-600">{{ ad_group_level_count|intcomma }}</div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+        <div class="p-6">
+            <form method="GET" action="{% url 'negative_keywords_list' %}" class="space-y-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+                    <!-- Search -->
+                    <div>
+                        <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <input type="text" name="search" id="search" value="{{ search_query }}" placeholder="Search keywords..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <!-- Match Type Filter -->
+                    <div>
+                        <label for="match_type" class="block text-sm font-medium text-gray-700 mb-1">Match Type</label>
+                        <select name="match_type" id="match_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Types</option>
+                            {% for value, label in match_types %}
+                                <option value="{{ value }}" {% if match_type_filter == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- State Filter -->
+                    <div>
+                        <label for="state" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select name="state" id="state" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Status</option>
+                            {% for value, label in states %}
+                                <option value="{{ value }}" {% if state_filter == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Target Type Filter -->
+                    <div>
+                        <label for="target_type" class="block text-sm font-medium text-gray-700 mb-1">Target Type</label>
+                        <select name="target_type" id="target_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Types</option>
+                            <option value="campaign" {% if target_type_filter == 'campaign' %}selected{% endif %}>Campaign Level</option>
+                            <option value="ad_group" {% if target_type_filter == 'ad_group' %}selected{% endif %}>Ad Group Level</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Campaign Filter -->
+                    <div>
+                        <label for="campaign" class="block text-sm font-medium text-gray-700 mb-1">Campaign</label>
+                        <select name="campaign" id="campaign" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Campaigns</option>
+                            {% for campaign in campaigns %}
+                                <option value="{{ campaign.id }}" {% if campaign_filter == campaign.id|stringformat:"s" %}selected{% endif %}>{{ campaign.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Account Filter -->
+                    <div>
+                        <label for="account" class="block text-sm font-medium text-gray-700 mb-1">Account</label>
+                        <select name="account" id="account" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Accounts</option>
+                            {% for account in amazon_accounts %}
+                                <option value="{{ account.id }}" {% if account_filter == account.id|stringformat:"s" %}selected{% endif %}>{{ account.account_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Desktop Layout -->
+                <div class="hidden md:flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        Showing {{ negative_keywords.count }} of {{ total_count }} negative keywords
+                        {% if search_query or match_type_filter or state_filter or target_type_filter or campaign_filter or account_filter %}
+                            <a href="{% url 'negative_keywords_list' %}" class="ml-2 text-indigo-600 hover:text-indigo-800">Clear filters</a>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                        Apply Filters
+                    </button>
+                </div>
+                
+                <!-- Mobile Layout -->
+                <div class="md:hidden space-y-2">
+                    <div class="text-sm text-gray-600 text-center">
+                        Showing {{ negative_keywords.count }} of {{ total_count }} negative keywords
+                        {% if search_query or match_type_filter or state_filter or target_type_filter or campaign_filter or account_filter %}
+                            <a href="{% url 'negative_keywords_list' %}" class="ml-2 text-indigo-600 hover:text-indigo-800">Clear filters</a>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                        Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div id="bulkActions" class="hidden bg-white shadow-lg rounded-lg overflow-hidden mb-6 p-4">
+        <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-gray-700" id="selectedCount">0 negative keywords selected</span>
+            <div class="flex items-center space-x-2">
+                <form method="POST" action="{% url 'negative_keywords_list' %}" class="inline" onsubmit="return confirm('Are you sure you want to delete selected negative keywords?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="bulk_delete">
+                    <div id="bulkDeleteInputs"></div>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm">
+                        Delete Selected
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Negative Keywords Table -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keyword</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Match Type</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Type</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Name</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for nk in negative_keywords %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" name="negative_keyword_ids" value="{{ nk.id }}" class="negative-keyword-checkbox">
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ nk.keyword_text }}</div>
+                            <div class="text-sm text-gray-500">{{ nk.keyword_id }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                {{ nk.get_match_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if nk.campaign %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                    Campaign
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    Ad Group
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if nk.campaign %}
+                                {{ nk.campaign.name }}
+                            {% else %}
+                                {{ nk.ad_group.name }}
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if nk.campaign %}
+                                {{ nk.campaign.account.account_name }}
+                            {% else %}
+                                {{ nk.ad_group.campaign.account.account_name }}
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if nk.state == 'enabled' %}bg-green-100 text-green-800
+                                {% elif nk.state == 'paused' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ nk.get_state_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ nk.created_at|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex items-center space-x-2">
+                                <button onclick="openEditModal({{ nk.id }}, '{{ nk.keyword_text }}', '{{ nk.match_type }}', '{{ nk.state }}', '{{ nk.campaign.id|default:"" }}', '{{ nk.ad_group.id|default:"" }}')" class="text-indigo-600 hover:text-indigo-900">
+                                    Edit
+                                </button>
+                                <form method="POST" action="{% url 'negative_keywords_list' %}" class="inline" onsubmit="return confirm('Are you sure you want to delete this negative keyword?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="negative_keyword_id" value="{{ nk.id }}">
+                                    <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No negative keywords found</h3>
+                            <p class="mt-1 text-sm text-gray-500">
+                                {% if search_query or match_type_filter or state_filter or target_type_filter or campaign_filter or account_filter %}
+                                    Try adjusting your filters or search terms.
+                                {% else %}
+                                    Get started by adding a new negative keyword.
+                                {% endif %}
+                            </p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Create Negative Keyword Modal -->
+    <div id="createModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Add Negative Keyword</h3>
+                    <button onclick="closeCreateModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form method="POST" action="{% url 'negative_keywords_list' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Target Type *</label>
+                            <select name="target_type" id="create_target_type" required onchange="updateCreateTargetOptions()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="campaign">Campaign</option>
+                                <option value="ad_group">Ad Group</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" id="create_target_label">Campaign *</label>
+                            <select name="target_id" id="create_target_select" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Select Campaign</option>
+                                {% for campaign in campaigns %}
+                                    <option value="{{ campaign.id }}" data-type="campaign">{{ campaign.name }}</option>
+                                {% endfor %}
+                                {% for ad_group in ad_groups %}
+                                    <option value="{{ ad_group.id }}" data-type="ad_group" class="hidden">{{ ad_group.name }} ({{ ad_group.campaign.name }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Keyword Text *</label>
+                            <input type="text" name="keyword_text" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Match Type *</label>
+                            <select name="match_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                {% for value, label in match_types %}
+                                    <option value="{{ value }}" {% if value == 'negativeExact' %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">State *</label>
+                            <select name="state" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                {% for value, label in states %}
+                                    <option value="{{ value }}" {% if value == 'enabled' %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeCreateModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                            Add Negative Keyword
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Negative Keyword Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Edit Negative Keyword</h3>
+                    <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form method="POST" action="{% url 'negative_keywords_list' %}" id="editForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update">
+                    <input type="hidden" name="negative_keyword_id" id="edit_negative_keyword_id">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Target Type *</label>
+                            <select name="target_type" id="edit_target_type" required onchange="updateEditTargetOptions()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="campaign">Campaign</option>
+                                <option value="ad_group">Ad Group</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" id="edit_target_label">Campaign *</label>
+                            <select name="target_id" id="edit_target_select" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Select Campaign</option>
+                                {% for campaign in campaigns %}
+                                    <option value="{{ campaign.id }}" data-type="campaign">{{ campaign.name }}</option>
+                                {% endfor %}
+                                {% for ad_group in ad_groups %}
+                                    <option value="{{ ad_group.id }}" data-type="ad_group" class="hidden">{{ ad_group.name }} ({{ ad_group.campaign.name }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Keyword Text *</label>
+                            <input type="text" name="keyword_text" id="edit_keyword_text" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Match Type *</label>
+                            <select name="match_type" id="edit_match_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                {% for value, label in match_types %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">State *</label>
+                            <select name="state" id="edit_state" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                {% for value, label in states %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                            Update Negative Keyword
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Import Modal -->
+    <div id="importModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Bulk Import</h3>
+                    <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form method="POST" action="{% url 'negative_keywords_list' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="bulk_import">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">CSV File *</label>
+                            <input type="file" name="csv_file" accept=".csv" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-md">
+                            <p class="text-xs text-gray-600 mb-2">CSV Format:</p>
+                            <p class="text-xs text-gray-500 font-mono">keyword_text, match_type, state, target_type, target_id</p>
+                            <p class="text-xs text-gray-500 mt-2">Example:</p>
+                            <p class="text-xs text-gray-500 font-mono">unwanted term, negativeExact, enabled, campaign, 1</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeImportModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                            Import
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal functions
+        function openCreateModal() {
+            document.getElementById('createModal').classList.remove('hidden');
+        }
+        
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.add('hidden');
+        }
+        
+        function openEditModal(id, keywordText, matchType, state, campaignId, adGroupId) {
+            document.getElementById('edit_negative_keyword_id').value = id;
+            document.getElementById('edit_keyword_text').value = keywordText;
+            document.getElementById('edit_match_type').value = matchType;
+            document.getElementById('edit_state').value = state;
+            
+            if (campaignId) {
+                document.getElementById('edit_target_type').value = 'campaign';
+                document.getElementById('edit_target_select').value = campaignId;
+            } else if (adGroupId) {
+                document.getElementById('edit_target_type').value = 'ad_group';
+                document.getElementById('edit_target_select').value = adGroupId;
+            }
+            
+            updateEditTargetOptions();
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+        
+        function openImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+        }
+        
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+        }
+        
+        function updateCreateTargetOptions() {
+            const targetType = document.getElementById('create_target_type').value;
+            const targetSelect = document.getElementById('create_target_select');
+            const targetLabel = document.getElementById('create_target_label');
+            
+            if (targetType === 'campaign') {
+                targetLabel.textContent = 'Campaign *';
+            } else {
+                targetLabel.textContent = 'Ad Group *';
+            }
+            
+            const options = targetSelect.querySelectorAll('option');
+            options.forEach(option => {
+                if (option.value === '') {
+                    option.style.display = '';
+                } else {
+                    const optionType = option.getAttribute('data-type');
+                    if (optionType === targetType) {
+                        option.style.display = '';
+                    } else {
+                        option.style.display = 'none';
+                    }
+                }
+            });
+            
+            targetSelect.value = '';
+        }
+        
+        function updateEditTargetOptions() {
+            const targetType = document.getElementById('edit_target_type').value;
+            const targetSelect = document.getElementById('edit_target_select');
+            const targetLabel = document.getElementById('edit_target_label');
+            
+            if (targetType === 'campaign') {
+                targetLabel.textContent = 'Campaign *';
+            } else {
+                targetLabel.textContent = 'Ad Group *';
+            }
+            
+            const options = targetSelect.querySelectorAll('option');
+            options.forEach(option => {
+                if (option.value === '') {
+                    option.style.display = '';
+                } else {
+                    const optionType = option.getAttribute('data-type');
+                    if (optionType === targetType) {
+                        option.style.display = '';
+                    } else {
+                        option.style.display = 'none';
+                    }
+                }
+            });
+        }
+        
+        // Bulk actions
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.negative-keyword-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+            updateBulkActions();
+        }
+        
+        function updateBulkActions() {
+            const selected = document.querySelectorAll('.negative-keyword-checkbox:checked');
+            const bulkActions = document.getElementById('bulkActions');
+            const selectedCount = document.getElementById('selectedCount');
+            const bulkDeleteInputs = document.getElementById('bulkDeleteInputs');
+            
+            if (selected.length > 0) {
+                bulkActions.classList.remove('hidden');
+                selectedCount.textContent = `${selected.length} negative keyword(s) selected`;
+                
+                bulkDeleteInputs.innerHTML = '';
+                selected.forEach(checkbox => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'negative_keyword_ids';
+                    input.value = checkbox.value;
+                    bulkDeleteInputs.appendChild(input);
+                });
+            } else {
+                bulkActions.classList.add('hidden');
+            }
+        }
+        
+        // Add event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.negative-keyword-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateBulkActions);
+            });
+        });
+        
+        // Close modals on outside click
+        window.onclick = function(event) {
+            const modals = ['createModal', 'editModal', 'importModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (event.target == modal) {
+                    if (modalId === 'createModal') closeCreateModal();
+                    if (modalId === 'editModal') closeEditModal();
+                    if (modalId === 'importModal') closeImportModal();
+                }
+            });
+        }
+    </script>
+</div>
+{% endblock %}

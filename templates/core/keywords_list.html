@@ -1,0 +1,660 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Keywords - Appca{% endblock %}
+
+{% block content %}
+<div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="mb-6">
+        <!-- Desktop Layout -->
+        <div class="hidden md:flex items-center justify-between">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900">Keywords</h2>
+                <p class="mt-1 text-sm text-gray-500">Manage keywords across campaigns with bid management and performance tracking</p>
+            </div>
+            <button onclick="openCreateModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium">
+                + Add Keyword
+            </button>
+        </div>
+        
+        <!-- Mobile Layout -->
+        <div class="md:hidden">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900 text-left">Keywords</h2>
+                <p class="mt-1 text-sm text-gray-500 text-left">Manage keywords across campaigns with bid management and performance tracking</p>
+            </div>
+            <button onclick="openCreateModal()" class="w-full mt-4 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium">
+                + Add Keyword
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+        <div class="p-6">
+            <form method="GET" action="{% url 'keywords_list' %}" class="space-y-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    <!-- Search -->
+                    <div>
+                        <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <input type="text" name="search" id="search" value="{{ search_query }}" placeholder="Search keywords..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <!-- State Filter -->
+                    <div>
+                        <label for="state" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select name="state" id="state" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Status</option>
+                            {% for value, label in keyword_states %}
+                                <option value="{{ value }}" {% if state_filter == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Match Type Filter -->
+                    <div>
+                        <label for="match_type" class="block text-sm font-medium text-gray-700 mb-1">Match Type</label>
+                        <select name="match_type" id="match_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Types</option>
+                            {% for value, label in match_types %}
+                                <option value="{{ value }}" {% if match_type_filter == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Campaign Filter -->
+                    <div>
+                        <label for="campaign" class="block text-sm font-medium text-gray-700 mb-1">Campaign</label>
+                        <select name="campaign" id="campaign" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Campaigns</option>
+                            {% for campaign in campaigns %}
+                                <option value="{{ campaign.id }}" {% if campaign_filter == campaign.id|stringformat:"s" %}selected{% endif %}>{{ campaign.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Account Filter -->
+                    <div>
+                        <label for="account" class="block text-sm font-medium text-gray-700 mb-1">Account</label>
+                        <select name="account" id="account" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Accounts</option>
+                            {% for account in amazon_accounts %}
+                                <option value="{{ account.id }}" {% if account_filter == account.id|stringformat:"s" %}selected{% endif %}>{{ account.account_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        Showing {{ keywords.count }} of {{ total_count }} keywords
+                        {% if state_filter or match_type_filter or campaign_filter or account_filter or search_query %}
+                            <a href="{% url 'keywords_list' %}" class="ml-2 text-indigo-600 hover:text-indigo-800">Clear filters</a>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                        Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Keywords Table -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keyword</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Match Type</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ad Group</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bid</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spend (30d)</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales (30d)</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ACOS</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CTR</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPC</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for keyword in keywords %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" name="keyword_ids" value="{{ keyword.id }}" class="keyword-checkbox">
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ keyword.keyword_text }}</div>
+                            <div class="text-sm text-gray-500">{{ keyword.keyword_id }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ keyword.get_match_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ keyword.ad_group.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ keyword.ad_group.campaign.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if keyword.bid %}
+                                ${{ keyword.bid|floatformat:2|intcomma }}
+                            {% else %}
+                                <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${{ keyword.total_spend|default:0|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${{ keyword.total_sales|default:0|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm {% if keyword.calculated_acos > 30 %}text-red-600{% elif keyword.calculated_acos > 0 %}text-green-600{% else %}text-gray-400{% endif %}">
+                            {% if keyword.calculated_acos > 0 %}
+                                {{ keyword.calculated_acos|floatformat:2 }}%
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if keyword.calculated_ctr > 0 %}
+                                {{ keyword.calculated_ctr|floatformat:2 }}%
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if keyword.calculated_cpc > 0 %}
+                                ${{ keyword.calculated_cpc|floatformat:2|intcomma }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if keyword.state == 'enabled' %}bg-green-100 text-green-800
+                                {% elif keyword.state == 'paused' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ keyword.get_state_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex items-center space-x-2">
+                                <button onclick="openEditModal({{ keyword.id }}, '{{ keyword.keyword_text }}', '{{ keyword.match_type }}', '{{ keyword.state }}', '{{ keyword.bid|default:"" }}', {{ keyword.ad_group.id }})" class="text-indigo-600 hover:text-indigo-900">
+                                    Edit
+                                </button>
+                                <button onclick="openBidModal({{ keyword.id }}, '{{ keyword.keyword_text }}', '{{ keyword.bid|default:"" }}')" class="text-purple-600 hover:text-purple-900">
+                                    Bid
+                                </button>
+                                {% if keyword.state == 'enabled' %}
+                                    <form method="POST" action="{% url 'keywords_list' %}" class="inline" onsubmit="return confirm('Are you sure you want to pause this keyword?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="pause">
+                                        <input type="hidden" name="keyword_id" value="{{ keyword.id }}">
+                                        <button type="submit" class="text-yellow-600 hover:text-yellow-900">Pause</button>
+                                    </form>
+                                {% elif keyword.state == 'paused' %}
+                                    <form method="POST" action="{% url 'keywords_list' %}" class="inline" onsubmit="return confirm('Are you sure you want to resume this keyword?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="resume">
+                                        <input type="hidden" name="keyword_id" value="{{ keyword.id }}">
+                                        <button type="submit" class="text-green-600 hover:text-green-900">Resume</button>
+                                    </form>
+                                {% endif %}
+                                <form method="POST" action="{% url 'keywords_list' %}" class="inline" onsubmit="return confirm('Are you sure you want to delete this keyword?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="keyword_id" value="{{ keyword.id }}">
+                                    <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="13" class="px-6 py-12 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No keywords found</h3>
+                            <p class="mt-1 text-sm text-gray-500">
+                                {% if search_query or state_filter or match_type_filter or campaign_filter or account_filter %}
+                                    Try adjusting your filters or search terms.
+                                {% else %}
+                                    Get started by adding a new keyword.
+                                {% endif %}
+                            </p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div id="bulkActions" class="hidden bg-white shadow-lg rounded-lg overflow-hidden mb-6 p-4">
+        <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-gray-700" id="selectedCount">0 keywords selected</span>
+            <div class="flex items-center space-x-2">
+                <button onclick="openBulkBidModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 text-sm">
+                    Bulk Update Bids
+                </button>
+                <form method="POST" action="{% url 'keywords_list' %}" class="inline" onsubmit="return confirm('Are you sure you want to delete selected keywords?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="bulk_delete">
+                    <div id="bulkDeleteInputs"></div>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm">
+                        Delete Selected
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Terms Analysis Section -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+        <div class="p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Top Search Terms (Last 30 Days)</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Search Query</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impressions</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clicks</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ACOS</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for term in search_terms %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ term.query }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ term.total_impressions|default:0|intcomma }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ term.total_clicks|default:0|intcomma }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ term.total_cost|default:0|floatformat:2|intcomma }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ term.total_sales|default:0|floatformat:2|intcomma }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ term.total_orders|default:0|intcomma }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm {% if term.acos > 30 %}text-red-600{% elif term.acos > 0 %}text-green-600{% else %}text-gray-400{% endif %}">
+                                {% if term.acos > 0 %}
+                                    {{ term.acos|floatformat:2 }}%
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">
+                                No search term data available for the selected period.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Keyword Modal -->
+    <div id="createModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Add New Keyword</h3>
+                    <button onclick="closeCreateModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form method="POST" action="{% url 'keywords_list' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ad Group *</label>
+                            <select name="ad_group" id="create_ad_group" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Select Ad Group</option>
+                                {% for ad_group in ad_groups %}
+                                    <option value="{{ ad_group.id }}">{{ ad_group.name }} ({{ ad_group.campaign.name }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Keyword Text *</label>
+                            <input type="text" name="keyword_text" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Match Type *</label>
+                            <select name="match_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                {% for value, label in match_types %}
+                                    {% if value != 'negativeExact' and value != 'negativePhrase' %}
+                                        <option value="{{ value }}" {% if value == 'broad' %}selected{% endif %}>{{ label }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">State *</label>
+                            <select name="state" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                {% for value, label in keyword_states %}
+                                    <option value="{{ value }}" {% if value == 'enabled' %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Bid</label>
+                            <input type="number" name="bid" step="0.01" min="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeCreateModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                            Add Keyword
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Keyword Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Edit Keyword</h3>
+                    <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form method="POST" action="{% url 'keywords_list' %}" id="editForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update">
+                    <input type="hidden" name="keyword_id" id="edit_keyword_id">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ad Group *</label>
+                            <select name="ad_group" id="edit_ad_group" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                {% for ad_group in ad_groups %}
+                                    <option value="{{ ad_group.id }}">{{ ad_group.name }} ({{ ad_group.campaign.name }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Keyword Text *</label>
+                            <input type="text" name="keyword_text" id="edit_keyword_text" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Match Type *</label>
+                            <select name="match_type" id="edit_match_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                {% for value, label in match_types %}
+                                    {% if value != 'negativeExact' and value != 'negativePhrase' %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">State *</label>
+                            <select name="state" id="edit_state" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                {% for value, label in keyword_states %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Bid</label>
+                            <input type="number" name="bid" id="edit_bid" step="0.01" min="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                            Update Keyword
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bid Update Modal -->
+    <div id="bidModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Update Bid</h3>
+                    <button onclick="closeBidModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form method="POST" action="{% url 'keywords_list' %}" id="bidForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_bid">
+                    <input type="hidden" name="keyword_id" id="bid_keyword_id">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Keyword</label>
+                            <input type="text" id="bid_keyword_text" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">New Bid *</label>
+                            <input type="number" name="bid" id="bid_bid" step="0.01" min="0.01" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeBidModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                            Update Bid
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Bid Update Modal -->
+    <div id="bulkBidModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Bulk Update Bids</h3>
+                    <button onclick="closeBulkBidModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form method="POST" action="{% url 'keywords_list' %}" id="bulkBidForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="bulk_update_bids">
+                    <div id="bulkBidInputs"></div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Change Type *</label>
+                            <select name="bid_change_type" id="bid_change_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="absolute">Absolute ($)</option>
+                                <option value="percentage">Percentage (%)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Value *</label>
+                            <input type="number" name="bid_value" step="0.01" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g., 0.50 or 10">
+                        </div>
+                        <p class="text-xs text-gray-500">
+                            <span id="bidHelpText">Enter the dollar amount to add/subtract from current bids.</span>
+                        </p>
+                    </div>
+                    <div class="flex items-center justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeBulkBidModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                            Update Bids
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal functions
+        function openCreateModal() {
+            document.getElementById('createModal').classList.remove('hidden');
+        }
+        
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.add('hidden');
+        }
+        
+        function openEditModal(id, keywordText, matchType, state, bid, adGroupId) {
+            document.getElementById('edit_keyword_id').value = id;
+            document.getElementById('edit_keyword_text').value = keywordText;
+            document.getElementById('edit_match_type').value = matchType;
+            document.getElementById('edit_state').value = state;
+            document.getElementById('edit_bid').value = bid || '';
+            document.getElementById('edit_ad_group').value = adGroupId;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+        
+        function openBidModal(id, keywordText, currentBid) {
+            document.getElementById('bid_keyword_id').value = id;
+            document.getElementById('bid_keyword_text').value = keywordText;
+            document.getElementById('bid_bid').value = currentBid || '';
+            document.getElementById('bidModal').classList.remove('hidden');
+        }
+        
+        function closeBidModal() {
+            document.getElementById('bidModal').classList.add('hidden');
+        }
+        
+        function openBulkBidModal() {
+            const selected = document.querySelectorAll('.keyword-checkbox:checked');
+            if (selected.length === 0) {
+                alert('Please select at least one keyword.');
+                return;
+            }
+            
+            const container = document.getElementById('bulkBidInputs');
+            container.innerHTML = '';
+            selected.forEach(checkbox => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'keyword_ids';
+                input.value = checkbox.value;
+                container.appendChild(input);
+            });
+            
+            document.getElementById('bulkBidModal').classList.remove('hidden');
+        }
+        
+        function closeBulkBidModal() {
+            document.getElementById('bulkBidModal').classList.add('hidden');
+        }
+        
+        // Bulk actions
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.keyword-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+            updateBulkActions();
+        }
+        
+        function updateBulkActions() {
+            const selected = document.querySelectorAll('.keyword-checkbox:checked');
+            const bulkActions = document.getElementById('bulkActions');
+            const selectedCount = document.getElementById('selectedCount');
+            const bulkDeleteInputs = document.getElementById('bulkDeleteInputs');
+            
+            if (selected.length > 0) {
+                bulkActions.classList.remove('hidden');
+                selectedCount.textContent = `${selected.length} keyword(s) selected`;
+                
+                bulkDeleteInputs.innerHTML = '';
+                selected.forEach(checkbox => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'keyword_ids';
+                    input.value = checkbox.value;
+                    bulkDeleteInputs.appendChild(input);
+                });
+            } else {
+                bulkActions.classList.add('hidden');
+            }
+        }
+        
+        // Add event listeners to checkboxes
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.keyword-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateBulkActions);
+            });
+            
+            // Update help text based on change type
+            const changeType = document.getElementById('bid_change_type');
+            const helpText = document.getElementById('bidHelpText');
+            if (changeType) {
+                changeType.addEventListener('change', function() {
+                    if (this.value === 'absolute') {
+                        helpText.textContent = 'Enter the dollar amount to add/subtract from current bids.';
+                    } else {
+                        helpText.textContent = 'Enter the percentage to increase/decrease current bids (e.g., 10 for 10% increase, -5 for 5% decrease).';
+                    }
+                });
+            }
+        });
+        
+        // Close modals on outside click
+        window.onclick = function(event) {
+            const modals = ['createModal', 'editModal', 'bidModal', 'bulkBidModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (event.target == modal) {
+                    if (modalId === 'createModal') closeCreateModal();
+                    if (modalId === 'editModal') closeEditModal();
+                    if (modalId === 'bidModal') closeBidModal();
+                    if (modalId === 'bulkBidModal') closeBulkBidModal();
+                }
+            });
+        }
+    </script>
+</div>
+{% endblock %}

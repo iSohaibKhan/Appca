@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Alerts - Appca{% endblock %}
+
+{% block content %}
+<div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">Alerts</h2>
+        <p class="mt-1 text-sm text-gray-500">Stay up-to-date: spend, inventory, autopilot actions, and rule conflicts in one place</p>
+    </div>
+
+    <!-- Summary cards (indicators only; use Quick Actions for navigation) -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <dt class="text-sm font-medium text-gray-500">Spend Spikes</dt>
+                        <dd class="text-xl font-semibold text-gray-900">{{ spend_spike_count|intcomma }}</dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <dt class="text-sm font-medium text-gray-500">Low Inventory</dt>
+                        <dd class="text-xl font-semibold {% if low_inventory_count %}text-yellow-600{% else %}text-gray-900{% endif %}">{{ low_inventory_count|intcomma }}</dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <dt class="text-sm font-medium text-gray-500">Rule Conflicts</dt>
+                        <dd class="text-xl font-semibold text-gray-900">{{ rule_conflicts_count|intcomma }}</dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <dt class="text-sm font-medium text-gray-500">Unread</dt>
+                        <dd class="text-xl font-semibold text-gray-900">{{ unread_count|intcomma }}</dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Quick Actions</h3>
+            <p class="mt-1 text-sm text-gray-500">Jump to specific alert types</p>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <a href="/alerts/spend-spikes/" class="group relative p-6 border-2 border-gray-200 rounded-lg hover:border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-lg">
+                    <div class="absolute inset-[1px] bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:from-white group-hover:to-white transition-all duration-300 mb-4">
+                            <svg class="h-6 w-6 text-white group-hover:text-black transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                        </div>
+                        <h4 class="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors">Spend Spikes</h4>
+                        <p class="mt-1 text-xs text-gray-500 group-hover:text-white/80 transition-colors">Unusual spending patterns</p>
+                    </div>
+                </a>
+                <a href="/inventory/low-inventory-warnings/" class="group relative p-6 border-2 border-gray-200 rounded-lg hover:border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-lg">
+                    <div class="absolute inset-[1px] bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:from-white group-hover:to-white transition-all duration-300 mb-4">
+                            <svg class="h-6 w-6 text-white group-hover:text-black transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                        </div>
+                        <h4 class="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors">Low Inventory</h4>
+                        <p class="mt-1 text-xs text-gray-500 group-hover:text-white/80 transition-colors">When to restock</p>
+                    </div>
+                </a>
+                <a href="/alerts/rule-conflicts/" class="group relative p-6 border-2 border-gray-200 rounded-lg hover:border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-lg">
+                    <div class="absolute inset-[1px] bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:from-white group-hover:to-white transition-all duration-300 mb-4">
+                            <svg class="h-6 w-6 text-white group-hover:text-black transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors">Rule Conflicts</h4>
+                        <p class="mt-1 text-xs text-gray-500 group-hover:text-white/80 transition-colors">Conflicting autopilot rules</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent alerts feed -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Alerts</h3>
+            <p class="mt-1 text-sm text-gray-500">Notifications and inventory alerts — always stay up-to-date</p>
+        </div>
+        <div class="p-6">
+            {% if recent_alerts %}
+                <div class="space-y-4">
+                    {% for item in recent_alerts %}
+                    <div class="flex items-start p-4 border border-gray-200 rounded-lg hover:bg-gray-50 {% if not item.is_read %}bg-indigo-50/30 border-indigo-100{% endif %}">
+                        <div class="flex-shrink-0 mt-0.5">
+                            {% if item.badge == 'error' or item.badge == 'warning' %}
+                                <svg class="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            {% elif item.badge == 'success' %}
+                                <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            {% else %}
+                                <svg class="h-5 w-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                </svg>
+                            {% endif %}
+                        </div>
+                        <div class="ml-3 flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <h4 class="text-sm font-medium text-gray-900">{{ item.title }}</h4>
+                                <span class="text-xs text-gray-500 whitespace-nowrap">{{ item.created_at|date:"M d, H:i" }}</span>
+                            </div>
+                            <p class="mt-1 text-sm text-gray-600">{{ item.message }}</p>
+                            {% if item.link %}
+                                <a href="{{ item.link }}" class="mt-2 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-800">View details →</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No recent alerts</h3>
+                    <p class="mt-1 text-sm text-gray-500">Spend, inventory, and autopilot notifications will appear here.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+
+{% block title %}Account Overview - Appca{% endblock %}
+
+{% block content %}
+<div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">Account Overview</h2>
+        <p class="mt-1 text-sm text-gray-500">Detailed account summary, connected Amazon accounts, and account health metrics</p>
+    </div>
+
+    <!-- Account Summary Cards -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Organizations</dt>
+                            <dd class="text-xl font-semibold text-gray-900">{{ account_summary.total_organizations }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Amazon Accounts</dt>
+                            <dd class="text-xl font-semibold text-gray-900">{{ account_summary.total_amazon_accounts }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Connected</dt>
+                            <dd class="text-xl font-semibold text-gray-900">{{ account_summary.connected_accounts }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Health Score</dt>
+                            <dd class="text-xl font-semibold text-gray-900">{{ account_summary.health_score }}%</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Summary Section -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Account Summary</h3>
+        </div>
+        <div class="p-6">
+            <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Full Name</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ user.get_full_name|default:user.email }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Email Address</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ user.email }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Account Created</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ user.date_joined|date:"F d, Y" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Last Login</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        {% if user.last_login %}
+                            {{ user.last_login|date:"F d, Y g:i A" }}
+                        {% else %}
+                            Never
+                        {% endif %}
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Organizations Section -->
+    {% if organizations %}
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Your Organizations</h3>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                {% for org in organizations %}
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center">
+                                <span class="text-white font-semibold text-sm">{{ org.name|first|upper }}</span>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-sm font-medium text-gray-900">{{ org.name }}</h4>
+                            <p class="text-sm text-gray-500">Created {{ org.created_at|date:"F d, Y" }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        {% if org.owner == user %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Owner</span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">Member</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Connected Amazon Accounts Section -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <!-- Desktop Layout -->
+            <div class="hidden md:flex items-center justify-between">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Connected Amazon Accounts</h3>
+                <a href="/settings/amazon-accounts/" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300">
+                    <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Connect Account
+                </a>
+            </div>
+            
+            <!-- Mobile Layout -->
+            <div class="md:hidden">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 text-left">Connected Amazon Accounts</h3>
+                <a href="/settings/amazon-accounts/" class="w-full mt-4 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300">
+                    <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    + Connect Account
+                </a>
+            </div>
+        </div>
+        <div class="p-6">
+            {% if amazon_accounts %}
+                <div class="space-y-4">
+                    {% for account in amazon_accounts %}
+                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center flex-1">
+                                <div class="flex-shrink-0">
+                                    {% if account.is_connected %}
+                                        <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                            <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                    {% else %}
+                                        <div class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                            <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <h4 class="text-sm font-medium text-gray-900">{{ account.account_name }}</h4>
+                                    <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                                        <span>{{ account.organization.name }}</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                                            {% if account.account_type == 'advertiser' %}bg-blue-100 text-blue-800
+                                            {% elif account.account_type == 'seller' %}bg-yellow-100 text-yellow-800
+                                            {% else %}bg-purple-100 text-purple-800{% endif %}">
+                                            {{ account.get_account_type_display }}
+                                        </span>
+                                        {% if account.profile_id %}
+                                            <span>Profile: {{ account.profile_id }}</span>
+                                        {% endif %}
+                                        {% if account.seller_id %}
+                                            <span>Seller: {{ account.seller_id }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                {% if account.is_connected %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Connected</span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Not Connected</span>
+                                {% endif %}
+                                {% if account.is_active %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">Active</span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Inactive</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if account.last_sync_at %}
+                        <div class="mt-3 pt-3 border-t border-gray-200">
+                            <p class="text-xs text-gray-500">Last synced: {{ account.last_sync_at|date:"F d, Y g:i A" }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No Amazon accounts connected</h3>
+                    <p class="mt-1 text-sm text-gray-500">Get started by connecting your Amazon Advertising or SP-API account.</p>
+                    <div class="mt-6">
+                        <a href="/settings/amazon-accounts/" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300">
+                            <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Connect Your First Account
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Account Health Metrics Section -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Account Health Metrics</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Connection Health -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-medium text-gray-900">Connection Health</h4>
+                        {% if account_summary.health_score >= 80 %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Excellent</span>
+                        {% elif account_summary.health_score >= 60 %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Good</span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Needs Attention</span>
+                        {% endif %}
+                    </div>
+                    <div class="mt-2">
+                        <div class="flex items-baseline">
+                            <span class="text-2xl font-semibold text-gray-900">{{ account_summary.health_score }}%</span>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">
+                            {{ account_summary.connected_accounts }} of {{ account_summary.total_amazon_accounts }} accounts connected
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Active Accounts -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-medium text-gray-900">Active Accounts</h4>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">Status</span>
+                    </div>
+                    <div class="mt-2">
+                        <div class="flex items-baseline">
+                            <span class="text-2xl font-semibold text-gray-900">{{ account_summary.active_accounts }}</span>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">
+                            {% if account_summary.total_amazon_accounts > 0 %}
+                                {{ account_summary.active_accounts|floatformat:0 }}% of total accounts
+                            {% else %}
+                                No accounts configured
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Account Status -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-medium text-gray-900">Account Status</h4>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">Overview</span>
+                    </div>
+                    <div class="mt-2">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Total Organizations</span>
+                                <span class="font-medium text-gray-900">{{ account_summary.total_organizations }}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Total Accounts</span>
+                                <span class="font-medium text-gray-900">{{ account_summary.total_amazon_accounts }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TODO: Phase 2 - Add more detailed health metrics -->
+            <div class="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <p class="text-sm text-indigo-800">
+                    <strong>Note:</strong> Detailed health metrics including sync status, API health, and performance indicators will be available in Phase 2.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

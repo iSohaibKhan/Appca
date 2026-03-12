@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - Settings - Appca{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% elif message.tags == 'info' %}bg-indigo-50 text-indigo-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">Notification preferences</h2>
+            <p class="mt-1 text-sm text-gray-500">Manage email and in-app notifications, types, frequency, and view history</p>
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'settings_notifications' %}">
+        {% csrf_token %}
+
+        <!-- 1. Email notification settings -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Email notification settings</h3>
+                <p class="mt-1 text-sm text-gray-500">Choose which notifications you want to receive by email</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex items-start">
+                    <input type="checkbox" id="email_spend_alerts" name="email_spend_alerts" {% if pref.email_spend_alerts %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                    <label for="email_spend_alerts" class="ml-2 block text-sm text-gray-700">Spend alerts (budget and spend spike warnings)</label>
+                </div>
+                <div class="flex items-start">
+                    <input type="checkbox" id="email_low_inventory" name="email_low_inventory" {% if pref.email_low_inventory %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                    <label for="email_low_inventory" class="ml-2 block text-sm text-gray-700">Low inventory alerts</label>
+                </div>
+                <div class="flex items-start">
+                    <input type="checkbox" id="email_autopilot_actions" name="email_autopilot_actions" {% if pref.email_autopilot_actions %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                    <label for="email_autopilot_actions" class="ml-2 block text-sm text-gray-700">Autopilot actions (bid changes, pauses, rule runs)</label>
+                </div>
+                <div class="flex items-start">
+                    <input type="checkbox" id="email_daily_summary" name="email_daily_summary" {% if pref.email_daily_summary %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                    <label for="email_daily_summary" class="ml-2 block text-sm text-gray-700">Daily summary report</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. In-app notification settings -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">In-app notification settings</h3>
+                <p class="mt-1 text-sm text-gray-500">Choose which notifications to show in the app and dashboard</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex items-start">
+                    <input type="checkbox" id="in_app_spend_alerts" name="in_app_spend_alerts" {% if pref.in_app_spend_alerts %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                    <label for="in_app_spend_alerts" class="ml-2 block text-sm text-gray-700">Spend alerts</label>
+                </div>
+                <div class="flex items-start">
+                    <input type="checkbox" id="in_app_low_inventory" name="in_app_low_inventory" {% if pref.in_app_low_inventory %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                    <label for="in_app_low_inventory" class="ml-2 block text-sm text-gray-700">Low inventory alerts</label>
+                </div>
+                <div class="flex items-start">
+                    <input type="checkbox" id="in_app_autopilot_actions" name="in_app_autopilot_actions" {% if pref.in_app_autopilot_actions %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                    <label for="in_app_autopilot_actions" class="ml-2 block text-sm text-gray-700">Autopilot actions</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Notification types (summary) -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Notification types</h3>
+                <p class="mt-1 text-sm text-gray-500">Control alerts, autopilot actions, and reports by channel</p>
+            </div>
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">In-app</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-gray-900">Alerts (spend, low inventory)</td>
+                                <td class="px-4 py-3 text-center">{% if pref.email_spend_alerts or pref.email_low_inventory %}<span class="text-green-600 text-sm">On</span>{% else %}<span class="text-gray-400 text-sm">Off</span>{% endif %}</td>
+                                <td class="px-4 py-3 text-center">{% if pref.in_app_spend_alerts or pref.in_app_low_inventory %}<span class="text-green-600 text-sm">On</span>{% else %}<span class="text-gray-400 text-sm">Off</span>{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-gray-900">Autopilot actions</td>
+                                <td class="px-4 py-3 text-center">{% if pref.email_autopilot_actions %}<span class="text-green-600 text-sm">On</span>{% else %}<span class="text-gray-400 text-sm">Off</span>{% endif %}</td>
+                                <td class="px-4 py-3 text-center">{% if pref.in_app_autopilot_actions %}<span class="text-green-600 text-sm">On</span>{% else %}<span class="text-gray-400 text-sm">Off</span>{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-gray-900">Reports (daily summary)</td>
+                                <td class="px-4 py-3 text-center">{% if pref.email_daily_summary %}<span class="text-green-600 text-sm">On</span>{% else %}<span class="text-gray-400 text-sm">Off</span>{% endif %}</td>
+                                <td class="px-4 py-3 text-center"><span class="text-gray-400 text-sm">—</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="mt-3 text-xs text-gray-500">Edit email and in-app toggles above to change these.</p>
+            </div>
+        </div>
+
+        <!-- 4. Frequency settings -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Frequency settings</h3>
+                <p class="mt-1 text-sm text-gray-500">How often you receive non-urgent notifications</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-700">Alerts and autopilot actions are sent <strong>immediately</strong> when they occur (if enabled above).</p>
+                <p class="text-sm text-gray-700">The <strong>daily summary</strong> email (when enabled) is sent once per day with a digest of activity.</p>
+            </div>
+        </div>
+
+        <div class="flex justify-end mb-6">
+            <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-sm">
+                Save preferences
+            </button>
+        </div>
+    </form>
+
+    <!-- 5. Notification history -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Notification history</h3>
+            <p class="mt-1 text-sm text-gray-500">Recent in-app notifications</p>
+        </div>
+        <div class="p-6">
+            {% if history %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Read</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for n in history %}
+                        <tr class="hover:bg-gray-50 {% if not n.is_read %}bg-indigo-50/50{% endif %}">
+                            <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{{ n.created_at|date:"M d, Y H:i" }}</td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {% if n.type == 'error' %}bg-red-100 text-red-800{% elif n.type == 'warning' %}bg-yellow-100 text-yellow-800{% elif n.type == 'success' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">{{ n.get_type_display }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ n.title }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{{ n.message }}</td>
+                            <td class="px-4 py-3 text-center">
+                                {% if n.is_read %}<span class="text-green-600 text-sm">Yes</span>{% else %}<span class="text-gray-400 text-sm">No</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-3 text-xs text-gray-500">Showing the last 50 notifications.</p>
+            {% else %}
+            <div class="text-center py-8 text-gray-500 text-sm">No notifications yet.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

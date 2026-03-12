@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+
+{% block title %}Safety Controls - Appca{% endblock %}
+
+{% block content %}
+<div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">Safety Controls</h2>
+        <p class="mt-1 text-sm text-gray-500">Configure limits and safeguards for autopilot actions</p>
+    </div>
+
+    <!-- Global Controls -->
+    <div class="mb-8 bg-white shadow-lg rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Global Controls</h3>
+            <p class="mt-1 text-sm text-gray-500">System-wide safety settings and emergency controls</p>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <!-- Global Statistics -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <dt class="text-sm font-medium text-gray-500 truncate">Enabled Accounts</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ enabled_accounts }}/{{ total_accounts }}</dd>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Daily Bid Changes</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ total_max_bid_changes }}</dd>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Daily Budget Changes</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ total_max_budget_changes }}</dd>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Controls -->
+            <div class="border-t pt-6">
+                <h4 class="text-md font-medium text-gray-900 mb-4">Emergency Controls</h4>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <form method="post" class="w-full sm:w-auto">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="global_kill_switch">
+                        <button type="submit" onclick="return confirm('Are you sure you want to activate the global kill switch? This will disable ALL autopilot functionality across all accounts.')" class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-300">
+                            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            Global Kill Switch
+                        </button>
+                    </form>
+
+                    <form method="post" class="w-full sm:w-auto">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="global_enable">
+                        <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300">
+                            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Enable All Accounts
+                        </button>
+                    </form>
+                </div>
+                <p class="mt-2 text-xs text-gray-500">Use these controls in emergency situations to immediately stop or start all automation.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account-Specific Safety Controls -->
+    <div class="space-y-6">
+        {% for item in accounts_with_limits %}
+            {% with account=item.account safety_limit=item.safety_limit %}
+                <div class="bg-white shadow-lg rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">{{ account.account_name }}</h3>
+                                <p class="mt-1 text-sm text-gray-500">Configure safety limits for this account</p>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if safety_limit.is_enabled %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if safety_limit.is_enabled %}Enabled{% else %}Disabled{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post" class="divide-y divide-gray-200">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_safety">
+
+                        <!-- Daily Limits -->
+                        <div class="px-6 py-4">
+                            <h4 class="text-sm font-medium text-gray-900 mb-3">Daily Action Limits</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Max Bid Changes per Day</label>
+                                    <input type="number" name="max_bid_changes_{{ account.id }}" value="{{ safety_limit.max_bid_changes_per_day }}" min="0" max="1000" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Max Budget Changes per Day</label>
+                                    <input type="number" name="max_budget_changes_{{ account.id }}" value="{{ safety_limit.max_budget_changes_per_day }}" min="0" max="100" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Max Campaign Pauses per Day</label>
+                                    <input type="number" name="max_campaign_pauses_{{ account.id }}" value="{{ safety_limit.max_campaign_pauses_per_day }}" min="0" max="50" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Budget Limits -->
+                        <div class="px-6 py-4">
+                            <h4 class="text-sm font-medium text-gray-900 mb-3">Budget Change Limits</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Max Daily Budget Increase (%)</label>
+                                    <input type="number" step="0.01" name="max_budget_increase_{{ account.id }}" value="{{ safety_limit.max_daily_budget_increase_percent }}" min="0" max="500" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Max Daily Budget Decrease (%)</label>
+                                    <input type="number" step="0.01" name="max_budget_decrease_{{ account.id }}" value="{{ safety_limit.max_daily_budget_decrease_percent }}" min="0" max="100" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Account Status -->
+                        <div class="px-6 py-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-900">Account Status</h4>
+                                    <p class="text-sm text-gray-500">Enable or disable autopilot for this account</p>
+                                </div>
+                                <div class="flex items-center">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="is_enabled_{{ account.id }}" {% if safety_limit.is_enabled %}checked{% endif %} class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                        <span class="ml-2 text-sm text-gray-700">Enable Autopilot</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Save Button for this Account -->
+                        <div class="px-6 py-4 bg-gray-50">
+                            <div class="flex justify-end">
+                                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300">
+                                    Save Changes for {{ account.account_name }}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+
+    <!-- Manual Override Section -->
+    <div class="mt-8 bg-white shadow-lg rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Manual Override</h3>
+            <p class="mt-1 text-sm text-gray-500">Temporarily pause or resume all automation across accounts</p>
+        </div>
+        <div class="p-6">
+            <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-yellow-800">Manual Override Active</h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <p>When manual override is active, all automated changes are paused. Use this feature when you need to make manual adjustments or during high-risk periods.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button type="button" class="inline-flex items-center justify-center sm:justify-start px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Pause All Automation (1 hour)
+                </button>
+
+                <button type="button" class="inline-flex items-center justify-center sm:justify-start px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l.707.707A1 1 0 0012.414 11H14m-5 2h1.586a1 1 0 01.707.293l.707.707A1 1 0 0012.414 13H14m-5 2h1.586a1 1 0 01.707.293l2.414 2.414A1 1 0 0016 18h2a1 1 0 001-1v-4a1 1 0 00-1-1h-2.414a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 0010 9H8a1 1 0 00-1 1v4a1 1 0 001 1z" />
+                    </svg>
+                    Resume All Automation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

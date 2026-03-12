@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Analytics - Appca{% endblock %}
+
+{% block content %}
+<div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">Analytics</h2>
+        <p class="mt-1 text-sm text-gray-500">Performance insights, trends, and detailed analytics</p>
+    </div>
+
+    <!-- Summary Stat Cards -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Spend (30d)</dt>
+                            <dd class="text-xl font-semibold text-gray-900">${{ total_spend_30d|floatformat:2|intcomma }}</dd>
+                            <dd class="text-xs text-gray-500 mt-1">${{ total_spend_7d|floatformat:2|intcomma }} (7d)</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Sales (30d)</dt>
+                            <dd class="text-xl font-semibold text-gray-900">${{ total_sales_30d|floatformat:2|intcomma }}</dd>
+                            <dd class="text-xs text-gray-500 mt-1">${{ total_sales_7d|floatformat:2|intcomma }} (7d)</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Average ACOS</dt>
+                            <dd class="text-xl font-semibold text-gray-900">{{ avg_acos|floatformat:2 }}%</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Average ROAS</dt>
+                            <dd class="text-xl font-semibold text-gray-900">{{ avg_roas|floatformat:2 }}x</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Metrics -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">CTR</dt>
+                            <dd class="text-xl font-semibold text-gray-900">{{ ctr|floatformat:2 }}%</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">CVR</dt>
+                            <dd class="text-xl font-semibold text-gray-900">{{ cvr|floatformat:2 }}%</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Impressions</dt>
+                            <dd class="text-xl font-semibold text-gray-900">{{ total_impressions_30d|intcomma }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                            <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Clicks</dt>
+                            <dd class="text-xl font-semibold text-gray-900">{{ total_clicks_30d|intcomma }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Quick Actions</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <a href="/analytics/performance-reports/" class="group relative p-6 border-2 border-gray-200 rounded-lg hover:border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-lg">
+                    <div class="absolute inset-[1px] bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:from-white group-hover:to-white transition-all duration-300 mb-4">
+                            <svg class="h-6 w-6 text-white group-hover:text-black transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors">Performance Reports</h4>
+                        <p class="mt-1 text-xs text-gray-500 group-hover:text-white/80 transition-colors">Generate detailed reports</p>
+                    </div>
+                </a>
+
+                <a href="/analytics/keyword-performance/" class="group relative p-6 border-2 border-gray-200 rounded-lg hover:border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-lg">
+                    <div class="absolute inset-[1px] bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:from-white group-hover:to-white transition-all duration-300 mb-4">
+                            <svg class="h-6 w-6 text-white group-hover:text-black transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors">Keyword Performance</h4>
+                        <p class="mt-1 text-xs text-gray-500 group-hover:text-white/80 transition-colors">Analyze keyword metrics</p>
+                    </div>
+                </a>
+
+                <a href="/analytics/campaign-trends/" class="group relative p-6 border-2 border-gray-200 rounded-lg hover:border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-lg">
+                    <div class="absolute inset-[1px] bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:from-white group-hover:to-white transition-all duration-300 mb-4">
+                            <svg class="h-6 w-6 text-white group-hover:text-black transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors">Campaign Trends</h4>
+                        <p class="mt-1 text-xs text-gray-500 group-hover:text-white/80 transition-colors">View performance trends</p>
+                    </div>
+                </a>
+
+                <a href="/analytics/date-filters/" class="group relative p-6 border-2 border-gray-200 rounded-lg hover:border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-lg">
+                    <div class="absolute inset-[1px] bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:from-white group-hover:to-white transition-all duration-300 mb-4">
+                            <svg class="h-6 w-6 text-white group-hover:text-black transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors">Date Filters</h4>
+                        <p class="mt-1 text-xs text-gray-500 group-hover:text-white/80 transition-colors">Custom date ranges</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Trends Chart -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Daily Performance Trends (Last 7 Days)</h3>
+        </div>
+        <div class="p-6">
+            <div class="h-64 flex items-end space-x-2">
+                {% for day in daily_performance %}
+                <div class="flex-1 flex flex-col items-center group relative">
+                    <div class="w-full bg-indigo-600 rounded-t hover:bg-indigo-700 transition-colors cursor-pointer" 
+                         style="height: {% if day.spend > 0 %}{% widthratio day.spend 1000 100 %}%{% else %}2px{% endif %}; min-height: 2px;" 
+                         title="Spend: ${{ day.spend|floatformat:2 }} | Sales: ${{ day.sales|floatformat:2 }} - {{ day.date|slice:"5:10" }}">
+                    </div>
+                    {% if forloop.counter|divisibleby:2 %}
+                        <span class="text-xs text-gray-500 mt-1 transform -rotate-45 origin-left whitespace-nowrap">{{ day.date|slice:"5:10" }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mt-4 flex items-center justify-center space-x-6 text-sm text-gray-600">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-indigo-600 rounded mr-2"></div>
+                    <span>Spend</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Top Performing Campaigns -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Top Performing Campaigns</h3>
+                <p class="mt-1 text-sm text-gray-500">Best performers by sales (Last 30 days)</p>
+            </div>
+            <div class="p-6">
+                {% if top_campaigns %}
+                    <div class="space-y-4">
+                        {% for campaign in top_campaigns %}
+                        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <div class="flex-1">
+                                <div class="text-sm font-medium text-gray-900">{{ campaign.name }}</div>
+                                <div class="text-xs text-gray-500 mt-1">{{ campaign.campaign_id }}</div>
+                            </div>
+                            <div class="text-right ml-4">
+                                <div class="text-sm font-semibold text-gray-900">${{ campaign.total_sales|default:0|floatformat:2|intcomma }}</div>
+                                <div class="text-xs {% if campaign.calculated_acos > 30 %}text-red-600{% else %}text-green-600{% endif %}">
+                                    ACOS: {{ campaign.calculated_acos|floatformat:2 }}%
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No campaign data available</h3>
+                        <p class="mt-1 text-sm text-gray-500">Connect your Amazon accounts to see performance data.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Underperforming Campaigns -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Underperforming Campaigns</h3>
+                <p class="mt-1 text-sm text-gray-500">Campaigns with high ACOS needing attention</p>
+            </div>
+            <div class="p-6">
+                {% if underperforming_campaigns %}
+                    <div class="space-y-4">
+                        {% for item in underperforming_campaigns %}
+                        <div class="flex items-center justify-between p-4 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+                            <div class="flex-1">
+                                <div class="text-sm font-medium text-gray-900">{{ item.campaign.name }}</div>
+                                <div class="text-xs text-gray-500 mt-1">{{ item.campaign.campaign_id }}</div>
+                            </div>
+                            <div class="text-right ml-4">
+                                <div class="text-sm font-semibold text-red-600">{{ item.acos|floatformat:2 }}% ACOS</div>
+                                <div class="text-xs text-gray-600">
+                                    Spend: ${{ item.spend|floatformat:2|intcomma }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">All campaigns performing well</h3>
+                        <p class="mt-1 text-sm text-gray-500">No campaigns need immediate attention.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Growth Indicators -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Growth Indicators</h3>
+            <p class="mt-1 text-sm text-gray-500">7-day average vs 30-day average</p>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div>
+                        <div class="text-sm font-medium text-gray-500">Spend Growth</div>
+                        <div class="text-2xl font-semibold {% if spend_growth > 0 %}text-green-600{% elif spend_growth < 0 %}text-red-600{% else %}text-gray-900{% endif %} mt-1">
+                            {% if spend_growth > 0 %}+{% endif %}{{ spend_growth|floatformat:1 }}%
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        {% if spend_growth > 0 %}
+                            <svg class="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                        {% elif spend_growth < 0 %}
+                            <svg class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                            </svg>
+                        {% else %}
+                            <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14" />
+                            </svg>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div>
+                        <div class="text-sm font-medium text-gray-500">Sales Growth</div>
+                        <div class="text-2xl font-semibold {% if sales_growth > 0 %}text-green-600{% elif sales_growth < 0 %}text-red-600{% else %}text-gray-900{% endif %} mt-1">
+                            {% if sales_growth > 0 %}+{% endif %}{{ sales_growth|floatformat:1 }}%
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        {% if sales_growth > 0 %}
+                            <svg class="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                        {% elif sales_growth < 0 %}
+                            <svg class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                            </svg>
+                        {% else %}
+                            <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14" />
+                            </svg>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Budgets - Appca{% endblock %}
+
+{% block content %}
+<div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="mb-6">
+        <!-- Desktop Layout -->
+        <div class="hidden md:flex items-center justify-between">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900">Budgets</h2>
+                <p class="mt-1 text-sm text-gray-500">Set and monitor campaign budgets</p>
+            </div>
+        </div>
+        
+        <!-- Mobile Layout -->
+        <div class="md:hidden">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900 text-left">Budgets</h2>
+                <p class="mt-1 text-sm text-gray-500 text-left">Set and monitor campaign budgets</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl p-6">
+            <div class="text-sm font-medium text-gray-500">Total Daily Budget</div>
+            <div class="mt-2 text-2xl font-bold text-gray-900">${{ total_daily_budget|floatformat:2|intcomma }}</div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl p-6">
+            <div class="text-sm font-medium text-gray-500">Total Monthly Budget</div>
+            <div class="mt-2 text-2xl font-bold text-gray-900">${{ total_monthly_budget|floatformat:2|intcomma }}</div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl p-6">
+            <div class="text-sm font-medium text-gray-500">Daily Spend</div>
+            <div class="mt-2 text-2xl font-bold text-gray-900">${{ total_daily_spend|floatformat:2|intcomma }}</div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl p-6">
+            <div class="text-sm font-medium text-gray-500">Monthly Spend</div>
+            <div class="mt-2 text-2xl font-bold text-gray-900">${{ total_monthly_spend|floatformat:2|intcomma }}</div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl p-6">
+            <div class="text-sm font-medium text-gray-500">Budget Alerts</div>
+            <div class="mt-2 text-2xl font-bold {% if alerts_count > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                {{ alerts_count|intcomma }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Utilization -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6 p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Overall Budget Utilization</h3>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">Daily Utilization</span>
+                    <span class="text-sm font-bold {% if overall_daily_utilization >= 100 %}text-red-600{% elif overall_daily_utilization >= 80 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                        {{ overall_daily_utilization|floatformat:1 }}%
+                    </span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="h-2.5 rounded-full {% if overall_daily_utilization >= 100 %}bg-red-600{% elif overall_daily_utilization >= 80 %}bg-yellow-600{% else %}bg-green-600{% endif %}" style="width: {% if overall_daily_utilization > 100 %}100{% else %}{{ overall_daily_utilization }}{% endif %}%"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">Monthly Utilization</span>
+                    <span class="text-sm font-bold {% if overall_monthly_utilization >= 100 %}text-red-600{% elif overall_monthly_utilization >= 80 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                        {{ overall_monthly_utilization|floatformat:1 }}%
+                    </span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="h-2.5 rounded-full {% if overall_monthly_utilization >= 100 %}bg-red-600{% elif overall_monthly_utilization >= 80 %}bg-yellow-600{% else %}bg-green-600{% endif %}" style="width: {% if overall_monthly_utilization > 100 %}100{% else %}{{ overall_monthly_utilization }}{% endif %}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+        <div class="p-6">
+            <form method="GET" action="{% url 'budgets_list' %}" class="space-y-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <!-- Search -->
+                    <div>
+                        <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <input type="text" name="search" id="search" value="{{ search_query }}" placeholder="Search campaigns..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <!-- Account Filter -->
+                    <div>
+                        <label for="account" class="block text-sm font-medium text-gray-700 mb-1">Account</label>
+                        <select name="account" id="account" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Accounts</option>
+                            {% for account in amazon_accounts %}
+                                <option value="{{ account.id }}" {% if account_filter == account.id|stringformat:"s" %}selected{% endif %}>{{ account.account_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Alert Filter -->
+                    <div>
+                        <label for="alert" class="block text-sm font-medium text-gray-700 mb-1">Alerts</label>
+                        <select name="alert" id="alert" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Campaigns</option>
+                            <option value="has_alerts" {% if alert_filter == 'has_alerts' %}selected{% endif %}>Has Alerts</option>
+                            <option value="no_alerts" {% if alert_filter == 'no_alerts' %}selected{% endif %}>No Alerts</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sort By -->
+                    <div>
+                        <label for="sort_by" class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                        <select name="sort_by" id="sort_by" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="utilization" {% if sort_by == 'utilization' %}selected{% endif %}>Utilization</option>
+                            <option value="campaign" {% if sort_by == 'campaign' %}selected{% endif %}>Campaign Name</option>
+                            <option value="budget" {% if sort_by == 'budget' %}selected{% endif %}>Budget Amount</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Desktop Layout -->
+                <div class="hidden md:flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        Showing {{ budget_list|length }} of {{ total_campaigns }} campaigns
+                        {% if search_query or account_filter or alert_filter %}
+                            <a href="{% url 'budgets_list' %}" class="ml-2 text-indigo-600 hover:text-indigo-800">Clear filters</a>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                        Apply Filters
+                    </button>
+                </div>
+                
+                <!-- Mobile Layout -->
+                <div class="md:hidden space-y-2">
+                    <div class="text-sm text-gray-600 text-center">
+                        Showing {{ budget_list|length }} of {{ total_campaigns }} campaigns
+                        {% if search_query or account_filter or alert_filter %}
+                            <a href="{% url 'budgets_list' %}" class="ml-2 text-indigo-600 hover:text-indigo-800">Clear filters</a>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                        Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Budget List Table -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Budget</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Budget</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Spend</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Spend</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Utilization</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Utilization</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alerts</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for budget in budget_list %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ budget.campaign.name }}</div>
+                            <div class="text-sm text-gray-500">{{ budget.campaign.campaign_type|title }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ budget.campaign.account.account_name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if budget.daily_budget > 0 %}
+                                ${{ budget.daily_budget|floatformat:2|intcomma }}
+                            {% else %}
+                                <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if budget.monthly_budget > 0 %}
+                                ${{ budget.monthly_budget|floatformat:2|intcomma }}
+                            {% else %}
+                                <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${{ budget.daily_spend|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${{ budget.monthly_spend|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if budget.daily_budget > 0 %}
+                                <div class="flex items-center">
+                                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="h-2 rounded-full {% if budget.daily_utilization >= 100 %}bg-red-600{% elif budget.daily_utilization >= 80 %}bg-yellow-600{% else %}bg-green-600{% endif %}" style="width: {% if budget.daily_utilization > 100 %}100{% else %}{{ budget.daily_utilization }}{% endif %}%"></div>
+                                    </div>
+                                    <span class="text-xs font-medium {% if budget.daily_utilization >= 100 %}text-red-600{% elif budget.daily_utilization >= 80 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                                        {{ budget.daily_utilization|floatformat:1 }}%
+                                    </span>
+                                </div>
+                            {% else %}
+                                <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if budget.monthly_budget > 0 %}
+                                <div class="flex items-center">
+                                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="h-2 rounded-full {% if budget.monthly_utilization >= 100 %}bg-red-600{% elif budget.monthly_utilization >= 80 %}bg-yellow-600{% else %}bg-green-600{% endif %}" style="width: {% if budget.monthly_utilization > 100 %}100{% else %}{{ budget.monthly_utilization }}{% endif %}%"></div>
+                                    </div>
+                                    <span class="text-xs font-medium {% if budget.monthly_utilization >= 100 %}text-red-600{% elif budget.monthly_utilization >= 80 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                                        {{ budget.monthly_utilization|floatformat:1 }}%
+                                    </span>
+                                </div>
+                            {% else %}
+                                <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if budget.alerts %}
+                                <div class="flex flex-col space-y-1">
+                                    {% for alert in budget.alerts %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                                            {% if budget.alert_level == 'error' %}bg-red-100 text-red-800
+                                            {% elif budget.alert_level == 'warning' %}bg-yellow-100 text-yellow-800
+                                            {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                            {{ alert }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="text-gray-400 text-xs">No alerts</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="openEditBudgetModal({{ budget.campaign.id }}, '{{ budget.campaign.name }}', '{{ budget.daily_budget|default:"" }}')" class="text-indigo-600 hover:text-indigo-900">
+                                Edit Budget
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="px-6 py-12 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No campaigns found</h3>
+                            <p class="mt-1 text-sm text-gray-500">
+                                {% if search_query or account_filter or alert_filter %}
+                                    Try adjusting your filters.
+                                {% else %}
+                                    No campaigns available to display budgets.
+                                {% endif %}
+                            </p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Edit Budget Modal -->
+    <div id="editBudgetModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Edit Budget</h3>
+                    <button onclick="closeEditBudgetModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form method="POST" action="{% url 'budgets_list' %}" id="editBudgetForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_budget">
+                    <input type="hidden" name="campaign_id" id="edit_budget_campaign_id">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Campaign</label>
+                            <input type="text" id="edit_budget_campaign_name" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Daily Budget ($)</label>
+                            <input type="number" name="daily_budget" id="edit_budget_daily_budget" step="0.01" min="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter daily budget">
+                            <p class="mt-1 text-xs text-gray-500">Monthly budget will be calculated as daily budget × 30</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeEditBudgetModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+                            Update Budget
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openEditBudgetModal(campaignId, campaignName, currentBudget) {
+            document.getElementById('edit_budget_campaign_id').value = campaignId;
+            document.getElementById('edit_budget_campaign_name').value = campaignName;
+            document.getElementById('edit_budget_daily_budget').value = currentBudget || '';
+            document.getElementById('editBudgetModal').classList.remove('hidden');
+        }
+        
+        function closeEditBudgetModal() {
+            document.getElementById('editBudgetModal').classList.add('hidden');
+        }
+        
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('editBudgetModal');
+            if (event.target == modal) {
+                closeEditBudgetModal();
+            }
+        }
+    </script>
+</div>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Autopilot Preferences - Settings - Appca{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% elif message.tags == 'info' %}bg-indigo-50 text-indigo-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">Autopilot Preferences</h2>
+            <p class="mt-1 text-sm text-gray-500">Configure default autopilot behavior, safety limits, notifications, and approval rules</p>
+        </div>
+    </div>
+
+    {% if selected_org %}
+    {% if organizations|length > 1 %}
+    <div class="mb-4">
+        <label for="org-select" class="block text-sm font-medium text-gray-700">Organization</label>
+        <select id="org-select" onchange="window.location.href='/settings/autopilot-preferences/?org='+this.value" class="mt-1 block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+            {% for org in organizations %}
+            <option value="{{ org.id }}" {% if org.id == selected_org.id %}selected{% endif %}>{{ org.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'settings_autopilot_preferences' %}{% if selected_org %}?org={{ selected_org.id }}{% endif %}">
+        {% csrf_token %}
+
+        <!-- 1. Default autopilot settings -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Default autopilot settings</h3>
+                <p class="mt-1 text-sm text-gray-500">Defaults applied when creating new goals or rules</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex items-start">
+                    <input type="checkbox" id="default_autopilot_enabled" name="default_autopilot_enabled" {% if prefs.default_autopilot_enabled %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                    <label for="default_autopilot_enabled" class="ml-2 block text-sm text-gray-700">Enable autopilot by default for new goals</label>
+                </div>
+                <div>
+                    <label for="default_lookback_days" class="block text-sm font-medium text-gray-700">Default lookback period (days)</label>
+                    <input type="number" id="default_lookback_days" name="default_lookback_days" min="1" max="90" value="{{ prefs.default_lookback_days|default:7 }}" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    <p class="mt-1 text-xs text-gray-500">Number of days of data used to evaluate rules (1–90)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Global safety limits -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Global safety limits</h3>
+                <p class="mt-1 text-sm text-gray-500">Caps applied to automation to prevent excessive changes</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                    <div>
+                        <label for="max_bid_changes_per_day" class="block text-sm font-medium text-gray-700">Max bid changes per day</label>
+                        <input type="number" id="max_bid_changes_per_day" name="max_bid_changes_per_day" min="1" value="{{ prefs.max_bid_changes_per_day|default:50 }}" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    </div>
+                    <div>
+                        <label for="max_budget_changes_per_day" class="block text-sm font-medium text-gray-700">Max budget changes per day</label>
+                        <input type="number" id="max_budget_changes_per_day" name="max_budget_changes_per_day" min="1" value="{{ prefs.max_budget_changes_per_day|default:10 }}" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    </div>
+                    <div>
+                        <label for="max_campaign_pauses_per_day" class="block text-sm font-medium text-gray-700">Max campaign pauses per day</label>
+                        <input type="number" id="max_campaign_pauses_per_day" name="max_campaign_pauses_per_day" min="0" value="{{ prefs.max_campaign_pauses_per_day|default:5 }}" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    </div>
+                </div>
+                <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                    <div>
+                        <label for="max_daily_budget_increase_percent" class="block text-sm font-medium text-gray-700">Max daily budget increase (%)</label>
+                        <input type="number" id="max_daily_budget_increase_percent" name="max_daily_budget_increase_percent" min="0" max="100" step="0.5" value="{{ prefs.max_daily_budget_increase_percent|default:50 }}" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    </div>
+                    <div>
+                        <label for="max_daily_budget_decrease_percent" class="block text-sm font-medium text-gray-700">Max daily budget decrease (%)</label>
+                        <input type="number" id="max_daily_budget_decrease_percent" name="max_daily_budget_decrease_percent" min="0" max="100" step="0.5" value="{{ prefs.max_daily_budget_decrease_percent|default:30 }}" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3 & 4. Notification preferences + Action approval settings (side by side on desktop) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- 3. Notification preferences -->
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-200">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Notification preferences</h3>
+                    <p class="mt-1 text-sm text-gray-500">How and when you want to be notified about autopilot activity</p>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="flex items-start">
+                        <input type="checkbox" id="notify_email" name="notify_email" {% if prefs.notify_email %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <label for="notify_email" class="ml-2 block text-sm text-gray-700">Email notifications for autopilot actions</label>
+                    </div>
+                    <div class="flex items-start">
+                        <input type="checkbox" id="notify_in_app" name="notify_in_app" {% if prefs.notify_in_app %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <label for="notify_in_app" class="ml-2 block text-sm text-gray-700">In-app notifications (dashboard alerts)</label>
+                    </div>
+                    <div class="flex items-start">
+                        <input type="checkbox" id="notify_high_impact_only" name="notify_high_impact_only" {% if prefs.notify_high_impact_only %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <label for="notify_high_impact_only" class="ml-2 block text-sm text-gray-700">Only notify for high-impact actions (e.g. campaign pause, large budget change)</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Action approval settings -->
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-200">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Action approval settings</h3>
+                    <p class="mt-1 text-sm text-gray-500">Require manual approval before certain autopilot actions run</p>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="flex items-start">
+                        <input type="checkbox" id="require_approval_campaign_pause" name="require_approval_campaign_pause" {% if prefs.require_approval_campaign_pause %}checked{% endif %} class="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <label for="require_approval_campaign_pause" class="ml-2 block text-sm text-gray-700">Require approval before pausing a campaign</label>
+                    </div>
+                    <div>
+                        <label for="require_approval_budget_above_percent" class="block text-sm font-medium text-gray-700">Require approval for budget changes above (%)</label>
+                        <input type="number" id="require_approval_budget_above_percent" name="require_approval_budget_above_percent" min="0" max="100" step="1" value="{{ prefs.require_approval_budget_above_percent|default:20 }}" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        <p class="mt-1 text-xs text-gray-500">Budget changes above this percentage need your approval</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Default goals -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Default goals</h3>
+                <p class="mt-1 text-sm text-gray-500">Default goal type and targets when creating new autopilot goals</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label for="default_goal_type" class="block text-sm font-medium text-gray-700">Default goal type</label>
+                    <select id="default_goal_type" name="default_goal_type" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        {% for value, label in goal_type_choices %}
+                        <option value="{{ value }}" {% if prefs.default_goal_type == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                    <div>
+                        <label for="default_target_acos" class="block text-sm font-medium text-gray-700">Default target ACOS (%)</label>
+                        <input type="number" id="default_target_acos" name="default_target_acos" min="0" max="100" step="0.1" value="{{ prefs.default_target_acos }}" placeholder="Optional" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    </div>
+                    <div>
+                        <label for="default_target_roas" class="block text-sm font-medium text-gray-700">Default target ROAS</label>
+                        <input type="number" id="default_target_roas" name="default_target_roas" min="0" step="0.1" value="{{ prefs.default_target_roas }}" placeholder="Optional" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-sm">
+                Save preferences
+            </button>
+        </div>
+    </form>
+
+    {% else %}
+    <div class="bg-white shadow-lg rounded-lg p-8 text-center">
+        <p class="text-gray-500">You don't have access to any organization. Create or join an organization to configure autopilot preferences.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

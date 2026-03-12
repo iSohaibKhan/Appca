@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Stock Levels - Inventory - Appca{% endblock %}
+
+{% block content %}
+<div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">Stock Levels</h2>
+            <p class="mt-1 text-sm text-gray-500">Current inventory for all products, FBA/FBM status, and history</p>
+        </div>
+        <div class="w-full sm:w-auto">
+            <button type="button" onclick="syncInventory()" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-sm">
+                <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Sync with Amazon
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-8">
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <dt class="text-sm font-medium text-gray-500">Total Products</dt>
+                        <dd class="text-xl font-semibold text-gray-900">{{ total_products|intcomma }}</dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <dt class="text-sm font-medium text-gray-500">Low Stock</dt>
+                        <dd class="text-xl font-semibold text-yellow-600">{{ low_stock_warnings|length|intcomma }}</dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <dt class="text-sm font-medium text-gray-500">Healthy</dt>
+                        <dd class="text-xl font-semibold text-green-600">{{ healthy_count|intcomma }}</dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low stock warnings -->
+    {% if low_stock_warnings %}
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Low Stock Warnings</h3>
+            <p class="mt-1 text-sm text-gray-500">Products below threshold or out of stock</p>
+        </div>
+        <div class="p-6">
+            <div class="space-y-3">
+                {% for item in low_stock_warnings %}
+                <div class="flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg {% if item.status == 'out_of_stock' %}bg-red-50 border border-red-200{% else %}bg-yellow-50 border border-yellow-200{% endif %}">
+                    <div class="min-w-0">
+                        <div class="text-sm font-medium text-gray-900">{{ item.product.asin }} — {{ item.product.sku|default:"—" }}</div>
+                        <div class="text-xs text-gray-500 mt-1 truncate">{{ item.product.title|default:"—"|truncatewords:12 }}</div>
+                    </div>
+                    <div class="flex items-center gap-4 flex-shrink-0">
+                        <span class="text-sm font-medium {% if item.status == 'out_of_stock' %}text-red-600{% else %}text-yellow-700{% endif %}">
+                            {{ item.total_available|intcomma }} units
+                        </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if item.status == 'out_of_stock' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {% if item.status == 'out_of_stock' %}Out of stock{% else %}Low stock (≤{{ item.threshold }}){% endif %}
+                        </span>
+                        <span class="text-xs text-gray-500">Fulfillment: {{ item.fulfillment }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Product inventory list -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Product Inventory List</h3>
+            <p class="mt-1 text-sm text-gray-500">All products with current stock levels and FBA/FBM status</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ASIN / SKU</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Available</th>
+                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">FBA / FBM</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Threshold</th>
+                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in product_list %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div>{{ item.product.asin }}</div>
+                            <div class="text-gray-500">{{ item.product.sku|default:"—" }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title="{{ item.product.title|default:'' }}">{{ item.product.title|default:"—"|truncatewords:8 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">{{ item.total_available|intcomma }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium {% if item.fulfillment == 'FBA' %}bg-blue-100 text-blue-800{% elif item.fulfillment == 'FBM' %}bg-amber-100 text-amber-800{% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ item.fulfillment }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">{{ item.threshold|intcomma }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            {% if item.status == 'healthy' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Healthy</span>
+                            {% elif item.status == 'low_stock' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Low stock</span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Out of stock</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">No products with inventory data. Sync with Amazon to load inventory.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Inventory history -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Inventory History</h3>
+            <p class="mt-1 text-sm text-gray-500">Last 14 days: total available units and alert counts</p>
+        </div>
+        <div class="p-6 overflow-x-auto">
+            <div class="flex items-end gap-1 min-w-max" style="min-height: 120px;">
+                {% for h in inventory_history %}
+                <div class="flex flex-col items-center flex-1 min-w-[2rem] group relative">
+                    <div
+                        class="w-full bg-indigo-600 rounded-t hover:bg-indigo-700 transition-colors"
+                        style="height: {% if h.total_available > 0 and max_history_available %}{% widthratio h.total_available max_history_available 80 %}px{% else %}2px{% endif %}; min-height: 2px; max-height: 80px;"
+                        title="Date: {{ h.date|date:'Y-m-d' }} — Available: {{ h.total_available|intcomma }}, Low: {{ h.low_stock_count }}, OOS: {{ h.out_of_stock_count }}"
+                    ></div>
+                    <span class="text-xs text-gray-500 mt-1 transform -rotate-45 origin-top-left whitespace-nowrap">{{ h.date|date:"m/d" }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mt-4 flex flex-wrap items-center gap-6 text-sm text-gray-600">
+                <span class="flex items-center"><span class="w-3 h-3 bg-indigo-600 rounded mr-2"></span>Total available</span>
+                <span class="flex items-center"><span class="w-3 h-3 bg-yellow-500 rounded mr-2"></span>Low stock count (in tooltip)</span>
+                <span class="flex items-center"><span class="w-3 h-3 bg-red-500 rounded mr-2"></span>Out of stock count (in tooltip)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function syncInventory() {
+    if (confirm('Sync inventory from Amazon? This may take a few moments.')) {
+        // TODO: Phase 4 - Implement inventory sync
+        alert('Inventory sync will be available in Phase 4. This will sync data from Amazon.');
+    }
+}
+</script>
+{% endblock %}

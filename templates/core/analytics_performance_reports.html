@@ -1,0 +1,382 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Performance Reports - Appca{% endblock %}
+
+{% block content %}
+<div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">Performance Reports</h2>
+        <p class="mt-1 text-sm text-gray-500">Generate comprehensive analytics reports with custom date ranges and export options</p>
+    </div>
+
+    <!-- Report Generation Section -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Generate Report</h3>
+        </div>
+        <div class="p-6">
+            <form method="GET" action="{% url 'analytics_performance_reports' %}" class="space-y-6">
+                <!-- Report Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                    <div class="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-4">
+                        <label class="flex items-center">
+                            <input type="radio" name="report_type" value="campaign" {% if report_type == 'campaign' %}checked{% endif %} class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="ml-2 text-sm text-gray-700">Campaign Performance</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="report_type" value="keyword" {% if report_type == 'keyword' %}checked{% endif %} class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="ml-2 text-sm text-gray-700">Keyword Performance</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Date Range -->
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="date_from" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input type="date" name="date_from" id="date_from" value="{{ date_from }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label for="date_to" class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        <input type="date" name="date_to" id="date_to" value="{{ date_to }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Quick Date Presets -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Quick Presets</label>
+                    <div class="flex flex-col gap-2 md:flex-row md:flex-wrap">
+                        <button type="button" onclick="setDateRange(7)" class="w-full md:w-auto px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">Last 7 Days</button>
+                        <button type="button" onclick="setDateRange(30)" class="w-full md:w-auto px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">Last 30 Days</button>
+                        <button type="button" onclick="setDateRange(90)" class="w-full md:w-auto px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">Last 90 Days</button>
+                        <button type="button" onclick="setDateRange(365)" class="w-full md:w-auto px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">Last Year</button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="account" class="block text-sm font-medium text-gray-700 mb-1">Account</label>
+                        <select name="account" id="account" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Accounts</option>
+                            {% for account in amazon_accounts %}
+                                <option value="{{ account.id }}" {% if account_filter == account.id|stringformat:"s" %}selected{% endif %}>{{ account.account_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="campaign" class="block text-sm font-medium text-gray-700 mb-1">Campaign</label>
+                        <select name="campaign" id="campaign" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">All Campaigns</option>
+                            {% for campaign in campaigns %}
+                                <option value="{{ campaign.id }}" {% if campaign_filter == campaign.id|stringformat:"s" %}selected{% endif %}>{{ campaign.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <button type="submit" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium">
+                        Generate Report
+                    </button>
+                    <div class="flex space-x-3">
+                        {% if campaign_reports or keyword_reports %}
+                        <a href="{% url 'analytics_performance_reports' %}?report_type={{ report_type }}&date_from={{ date_from }}&date_to={{ date_to }}{% if account_filter %}&account={{ account_filter }}{% endif %}{% if campaign_filter %}&campaign={{ campaign_filter }}{% endif %}&export=csv" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700">
+                            Export CSV
+                        </a>
+                        <a href="{% url 'analytics_performance_reports' %}?report_type={{ report_type }}&date_from={{ date_from }}&date_to={{ date_to }}{% if account_filter %}&account={{ account_filter }}{% endif %}{% if campaign_filter %}&campaign={{ campaign_filter }}{% endif %}&export=excel" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700">
+                            Export Excel
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Campaign Performance Reports -->
+    {% if report_type == 'campaign' %}
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <!-- Desktop Layout -->
+            <div class="hidden md:flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Campaign Performance Reports</h3>
+                    <p class="mt-1 text-sm text-gray-500">Performance metrics for all campaigns in the selected date range</p>
+                </div>
+                <div class="text-sm text-gray-600">
+                    Showing {{ campaign_reports|length }} campaigns
+                </div>
+            </div>
+            <!-- Mobile Layout -->
+            <div class="md:hidden">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Campaign Performance Reports</h3>
+                    <p class="mt-1 text-sm text-gray-500">Performance metrics for all campaigns in the selected date range</p>
+                </div>
+                <div class="text-sm text-gray-600 mt-3">
+                    Showing {{ campaign_reports|length }} campaigns
+                </div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            {% if campaign_reports %}
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spend</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ACOS</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROAS</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CTR</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CVR</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for report in campaign_reports %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ report.campaign.name }}</div>
+                                <div class="text-sm text-gray-500">{{ report.campaign.campaign_id }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.campaign.account.account_name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                ${{ report.spend|floatformat:2|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                ${{ report.sales|floatformat:2|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.orders|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm {% if report.acos > 30 %}text-red-600{% else %}text-green-600{% endif %}">
+                                {{ report.acos|floatformat:2 }}%
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.roas|floatformat:2 }}x
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.ctr|floatformat:2 }}%
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.cvr|floatformat:2 }}%
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No campaign data available</h3>
+                    <p class="mt-1 text-sm text-gray-500">Select a date range and generate a report to see performance data.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Keyword Performance Reports -->
+    {% if report_type == 'keyword' %}
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <!-- Desktop Layout -->
+            <div class="hidden md:flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Keyword Performance Reports</h3>
+                    <p class="mt-1 text-sm text-gray-500">Performance metrics for all keywords in the selected date range</p>
+                </div>
+                <div class="text-sm text-gray-600">
+                    Showing {{ keyword_reports|length }} keywords
+                </div>
+            </div>
+            <!-- Mobile Layout -->
+            <div class="md:hidden">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Keyword Performance Reports</h3>
+                    <p class="mt-1 text-sm text-gray-500">Performance metrics for all keywords in the selected date range</p>
+                </div>
+                <div class="text-sm text-gray-600 mt-3">
+                    Showing {{ keyword_reports|length }} keywords
+                </div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            {% if keyword_reports %}
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keyword</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Match Type</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bid</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spend</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ACOS</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROAS</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CTR</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for report in keyword_reports %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ report.keyword.keyword_text }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                    {{ report.keyword.get_match_type_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.keyword.ad_group.campaign.name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${{ report.keyword.bid|default:0|floatformat:2 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                ${{ report.spend|floatformat:2|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                ${{ report.sales|floatformat:2|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.orders|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm {% if report.acos > 30 %}text-red-600{% else %}text-green-600{% endif %}">
+                                {{ report.acos|floatformat:2 }}%
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.roas|floatformat:2 }}x
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.ctr|floatformat:2 }}%
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No keyword data available</h3>
+                    <p class="mt-1 text-sm text-gray-500">Select a date range and generate a report to see performance data.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Scheduled Reports Section -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <!-- Desktop Layout -->
+            <div class="hidden md:flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Scheduled Reports</h3>
+                    <p class="mt-1 text-sm text-gray-500">Automatically generated reports sent to your email</p>
+                </div>
+                <button onclick="openScheduleModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium">
+                    + Schedule Report
+                </button>
+            </div>
+            <!-- Mobile Layout -->
+            <div class="md:hidden">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Scheduled Reports</h3>
+                    <p class="mt-1 text-sm text-gray-500">Automatically generated reports sent to your email</p>
+                </div>
+                <button onclick="openScheduleModal()" class="w-full mt-4 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium">
+                    + Schedule Report
+                </button>
+            </div>
+        </div>
+        <div class="p-6">
+            {% if scheduled_reports %}
+                <div class="space-y-4">
+                    {% for report in scheduled_reports %}
+                    <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <div class="flex-1">
+                            <div class="text-sm font-medium text-gray-900">{{ report.name }}</div>
+                            <div class="text-xs text-gray-500 mt-1">{{ report.frequency }} • {{ report.report_type }}</div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if report.is_active %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if report.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                            <button class="text-red-600 hover:text-red-800 text-sm font-medium">Delete</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No scheduled reports</h3>
+                    <p class="mt-1 text-sm text-gray-500">Schedule reports to automatically receive performance data via email.</p>
+                    <button onclick="openScheduleModal()" class="mt-4 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium">
+                        Schedule Your First Report
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Report Modal (Placeholder) -->
+<div id="scheduleModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Schedule Report</h3>
+            <p class="text-sm text-gray-500">This feature will be available in Phase 2.</p>
+            <div class="mt-4 flex justify-end">
+                <button onclick="closeScheduleModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function setDateRange(days) {
+    const today = new Date();
+    const fromDate = new Date(today);
+    fromDate.setDate(today.getDate() - days);
+    
+    document.getElementById('date_from').value = fromDate.toISOString().split('T')[0];
+    document.getElementById('date_to').value = today.toISOString().split('T')[0];
+}
+
+function openScheduleModal() {
+    document.getElementById('scheduleModal').classList.remove('hidden');
+}
+
+function closeScheduleModal() {
+    document.getElementById('scheduleModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

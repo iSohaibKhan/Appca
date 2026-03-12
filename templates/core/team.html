@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Team Members - Settings - Appca{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% elif message.tags == 'info' %}bg-indigo-50 text-indigo-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">Team Members</h2>
+            <p class="mt-1 text-sm text-gray-500">Manage your workspace members, roles, and permissions</p>
+        </div>
+    </div>
+
+    {% if selected_org %}
+    {% if manageable_orgs|length > 1 %}
+    <div class="mb-4">
+        <label for="org-select" class="block text-sm font-medium text-gray-700">Organization</label>
+        <select id="org-select" onchange="window.location.href='/settings/team/?org='+this.value" class="mt-1 block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+            {% for org in manageable_orgs %}
+            <option value="{{ org.id }}" {% if org.id == selected_org.id %}selected{% endif %}>{{ org.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+
+    <!-- Invite team member -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Invite team member</h3>
+            <p class="mt-1 text-sm text-gray-500">Add a user by email. They must already have an account.</p>
+        </div>
+        <div class="p-6">
+            <form method="post" action="{% url 'settings_team' %}{% if selected_org %}?org={{ selected_org.id }}{% endif %}" class="flex flex-wrap items-end gap-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="invite" />
+                <input type="hidden" name="organization_id" value="{{ selected_org.id }}" />
+                <div class="flex-1 min-w-[200px]">
+                    <label for="invite-email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="invite-email" name="email" required placeholder="colleague@example.com" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div class="w-full sm:w-40">
+                    <label for="invite-role" class="block text-sm font-medium text-gray-700">Role</label>
+                    <select id="invite-role" name="role" class="mt-1 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        {% for value, label in role_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-sm">
+                    Invite
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Team members list -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Team members</h3>
+            <p class="mt-1 text-sm text-gray-500">Members of {{ selected_org.name }}</p>
+        </div>
+        <div class="p-6">
+            {% if team_list %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Member</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for entry in team_list %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                                <div class="text-sm font-medium text-gray-900">{% if entry.user.get_full_name %}{{ entry.user.get_full_name }}{% else %}{{ entry.user.email }}{% endif %}</div>
+                                <div class="text-xs text-gray-500">{{ entry.user.email }}</div>
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if entry.is_owner %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">Owner</span>
+                                {% else %}
+                                <form method="post" action="{% url 'settings_team' %}{% if selected_org %}?org={{ selected_org.id }}{% endif %}" class="inline" id="role-form-{{ entry.membership_id }}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="change_role" />
+                                    <input type="hidden" name="organization_id" value="{{ selected_org.id }}" />
+                                    <input type="hidden" name="membership_id" value="{{ entry.membership_id }}" />
+                                    <select name="role" onchange="document.getElementById('role-form-{{ entry.membership_id }}').submit()" class="text-sm rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                        {% for value, label in role_choices %}
+                                        <option value="{{ value }}" {% if entry.role == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500">
+                                {% if entry.joined_at %}{{ entry.joined_at|date:"M d, Y" }}{% else %}—{% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-right whitespace-nowrap">
+                                {% if not entry.is_owner %}
+                                <form method="post" action="{% url 'settings_team' %}{% if selected_org %}?org={{ selected_org.id }}{% endif %}" class="inline" onsubmit="return confirm('Remove this member from the team?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="remove" />
+                                    <input type="hidden" name="organization_id" value="{{ selected_org.id }}" />
+                                    <input type="hidden" name="membership_id" value="{{ entry.membership_id }}" />
+                                    <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800">Remove</button>
+                                </form>
+                                {% else %}
+                                <span class="text-gray-400 text-sm">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-500 text-sm">No team members yet. Use the invite form above to add members.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Permission settings -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Permission settings</h3>
+            <p class="mt-1 text-sm text-gray-500">What each role can do in this workspace</p>
+        </div>
+        <div class="p-6">
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="text-sm font-semibold text-gray-900">Owner</h4>
+                    <p class="mt-1 text-xs text-gray-600">Full control. Can delete the organization, transfer ownership, and manage billing.</p>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="text-sm font-semibold text-gray-900">Admin</h4>
+                    <p class="mt-1 text-xs text-gray-600">Can invite and remove members, change roles, and manage all workspace settings except ownership and billing.</p>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="text-sm font-semibold text-gray-900">Member</h4>
+                    <p class="mt-1 text-xs text-gray-600">Can view and edit campaigns, rules, and reports. Cannot manage team or organization settings.</p>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="text-sm font-semibold text-gray-900">Viewer</h4>
+                    <p class="mt-1 text-xs text-gray-600">Read-only access to dashboards, reports, and campaigns. Cannot make changes or invite others.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white shadow-lg rounded-lg p-8 text-center">
+        <p class="text-gray-500">You don't have access to manage any organization yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

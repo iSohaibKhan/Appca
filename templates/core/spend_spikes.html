@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Spend Spikes - Alerts - Appca{% endblock %}
+
+{% block content %}
+<div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-purple-50 text-purple-800{% else %}bg-indigo-50 text-indigo-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">Spend Spikes</h2>
+        <p class="mt-1 text-sm text-gray-500">Unusual spending patterns, detection thresholds, and action recommendations</p>
+    </div>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-8">
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <dt class="text-sm font-medium text-gray-500">Recent Spike Alerts</dt>
+                        <dd class="text-xl font-semibold text-gray-900">{{ spend_spike_alerts|length|intcomma }}</dd>
+                        <dd class="text-xs text-gray-500 mt-1">Last 7 days</dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <dt class="text-sm font-medium text-gray-500">Historical Spikes</dt>
+                        <dd class="text-xl font-semibold text-gray-900">{{ historical_spikes|length|intcomma }}</dd>
+                        <dd class="text-xs text-gray-500 mt-1">Last 30 days</dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spend spike alerts list -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Spend Spike Alerts List</h3>
+            <p class="mt-1 text-sm text-gray-500">Recent days with unusual spend increase (last 7 days)</p>
+        </div>
+        <div class="p-6">
+            {% if spend_spike_alerts %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Spend</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Previous day</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for alert in spend_spike_alerts %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{{ alert.date|date:"M d, Y" }}</td>
+                                <td class="px-4 py-3 text-sm text-right font-medium text-gray-900">${{ alert.spend|floatformat:2|intcomma }}</td>
+                                <td class="px-4 py-3 text-sm text-right text-gray-600">${{ alert.previous_spend|floatformat:2|intcomma }}</td>
+                                <td class="px-4 py-3 text-right">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">+{{ alert.change_pct }}%</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No recent spend spikes</h3>
+                    <p class="mt-1 text-sm text-gray-500">Spend in the last 7 days did not exceed the spike threshold.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Spike detection thresholds -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Spike Detection Thresholds</h3>
+            <p class="mt-1 text-sm text-gray-500">When day-over-day spend increase triggers an alert</p>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">Minimum increase (%)</div>
+                        <div class="text-xs text-gray-500 mt-1">Alert when daily spend increases by this percent vs previous day</div>
+                    </div>
+                    <div class="text-lg font-semibold text-gray-900">{{ thresholds.spike_percent }}%</div>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">Minimum spend ($)</div>
+                        <div class="text-xs text-gray-500 mt-1">Ignore spikes when total daily spend is below this amount</div>
+                    </div>
+                    <div class="text-lg font-semibold text-gray-900">${{ thresholds.min_spend|floatformat:0|intcomma }}</div>
+                </div>
+            </div>
+            <p class="mt-4 text-xs text-gray-500">Threshold configuration will be available in Settings (Phase 4).</p>
+        </div>
+    </div>
+
+    <!-- Alert notifications -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Alert Notifications</h3>
+            <p class="mt-1 text-sm text-gray-500">How you receive spend spike alerts</p>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">Email: Spend alerts</div>
+                        <div class="text-xs text-gray-500">Receive an email when a spend spike is detected</div>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium {% if notification_prefs.email_spend_alerts %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-600{% endif %}">
+                        {% if notification_prefs.email_spend_alerts %}On{% else %}Off{% endif %}
+                    </span>
+                </div>
+                <div class="flex items-center justify-between py-3">
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">In-app: Spend alerts</div>
+                        <div class="text-xs text-gray-500">Show spend spike notifications in the app</div>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium {% if notification_prefs.in_app_spend_alerts %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-600{% endif %}">
+                        {% if notification_prefs.in_app_spend_alerts %}On{% else %}Off{% endif %}
+                    </span>
+                </div>
+            </div>
+            <p class="mt-4 text-xs text-gray-500">Change these in <a href="/settings/" class="text-indigo-600 hover:underline">Settings</a> when notification preferences are available.</p>
+        </div>
+    </div>
+
+    <!-- Historical spikes -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Historical Spikes</h3>
+            <p class="mt-1 text-sm text-gray-500">Past days that exceeded the spike threshold (last 30 days)</p>
+        </div>
+        <div class="p-6">
+            {% if historical_spikes %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Spend</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Previous day</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for spike in historical_spikes %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{{ spike.date|date:"M d, Y" }}</td>
+                                <td class="px-4 py-3 text-sm text-right font-medium text-gray-900">${{ spike.spend|floatformat:2|intcomma }}</td>
+                                <td class="px-4 py-3 text-sm text-right text-gray-600">${{ spike.previous_spend|floatformat:2|intcomma }}</td>
+                                <td class="px-4 py-3 text-right">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">+{{ spike.change_pct }}%</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No historical spikes</h3>
+                    <p class="mt-1 text-sm text-gray-500">No days in the last 30 exceeded the spike threshold.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action recommendations -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Action Recommendations</h3>
+            <p class="mt-1 text-sm text-gray-500">Suggested steps when spend spikes are detected</p>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                {% for rec in action_recommendations %}
+                <div class="flex items-start p-4 border border-gray-200 rounded-lg {% if rec.priority == 'high' %}border-l-4 border-l-red-500{% endif %}">
+                    <div class="flex-shrink-0 mt-0.5">
+                        {% if rec.priority == 'high' %}
+                            <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92z" clip-rule="evenodd" />
+                            </svg>
+                        {% else %}
+                            <svg class="h-5 w-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-semibold text-gray-900">{{ rec.title }}</h4>
+                        <p class="mt-1 text-sm text-gray-600">{{ rec.description }}</p>
+                        <span class="inline-block mt-2 text-xs font-medium text-gray-500 capitalize">{{ rec.priority }} priority</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
